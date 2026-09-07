@@ -1,0 +1,73 @@
+"use client"
+
+import { useCallback, useEffect, useState } from "react"
+import { GlobalSearch } from "@/components/global-search"
+import { NavContext, type ViewId } from "@/components/nav-context"
+import { Sidebar } from "@/components/sidebar"
+import { Topbar } from "@/components/topbar"
+import { Overview } from "@/components/views/overview"
+import { RiskExplorer } from "@/components/views/risk-explorer"
+import { SecurityControls } from "@/components/views/security-controls"
+import { InvestmentOptimizer } from "@/components/views/investment-optimizer"
+import { Reports } from "@/components/views/reports"
+
+export function AppShell() {
+  const [view, setView] = useState<ViewId>("overview")
+  const [riskId, setRiskId] = useState<string | null>(null)
+  const [controlId, setControlId] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+
+  const openRisk = useCallback((id: string) => {
+    setRiskId(id)
+    setView("risk-explorer")
+  }, [])
+
+  const openControl = useCallback((id: string) => {
+    setControlId(id)
+    setView("controls")
+  }, [])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault()
+        setSearchOpen((v) => !v)
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [])
+
+  return (
+    <NavContext.Provider
+      value={{
+        view,
+        setView,
+        riskId,
+        openRisk,
+        clearRisk: () => setRiskId(null),
+        controlId,
+        openControl,
+        clearControl: () => setControlId(null),
+        openSearch: () => setSearchOpen(true),
+      }}
+    >
+      <div className="flex h-dvh overflow-hidden bg-background">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar />
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8">
+              {view === "overview" && <Overview />}
+              {view === "risk-explorer" && <RiskExplorer />}
+              {view === "controls" && <SecurityControls />}
+              {view === "optimizer" && <InvestmentOptimizer />}
+              {view === "reports" && <Reports />}
+            </div>
+          </main>
+        </div>
+      </div>
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </NavContext.Provider>
+  )
+}
