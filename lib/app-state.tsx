@@ -3,17 +3,20 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react"
 import {
   ORGANIZATIONS,
-  getOrganization,
   type Objective,
   type OrgNotification,
   type Organization,
+  type OrganizationAssessment,
+  buildOrganizationFromAssessment,
 } from "@/lib/data"
 import { runOptimization, type OptimizationResult } from "@/lib/optimizer"
 
 interface AppStateValue {
   org: Organization
   orgId: string
+  organizations: Organization[]
   setOrgId: (id: string) => void
+  addOrganization: (assessment: OrganizationAssessment) => void
 
   budget: number
   setBudget: (value: number) => void
@@ -41,8 +44,10 @@ export function useAppState(): AppStateValue {
 }
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
+  const [customOrgs, setCustomOrgs] = useState<Organization[]>([])
+  const organizations = useMemo(() => [...ORGANIZATIONS, ...customOrgs], [customOrgs])
   const [orgId, setOrgIdState] = useState<string>(ORGANIZATIONS[0].id)
-  const org = useMemo(() => getOrganization(orgId), [orgId])
+  const org = useMemo(() => organizations.find((o) => o.id === orgId) ?? ORGANIZATIONS[0], [organizations, orgId])
 
   const [budget, setBudgetState] = useState<number>(ORGANIZATIONS[0].budgetDefault)
   const [objective, setObjectiveState] = useState<Objective>("max-reduction")
@@ -57,8 +62,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const setOrgId = useCallback((id: string) => {
     setOrgIdState(id)
-    const next = getOrganization(id)
+    const next = organizations.find((o) => o.id === id) ?? ORGANIZATIONS[0]
     setBudgetState(next.budgetDefault)
+    setHasRun(false)
+  }, [organizations])
+
+  const addOrganization = useCallback((assessment: OrganizationAssessment) => {
+    const next = buildOrganizationFromAssessment(assessment)
+    setCustomOrgs((prev) => [...prev.filter((o) => o.id !== next.id), next])
+    setNotifState((prev) => ({ ...prev, [next.id]: next.notifications.map((n) => ({ ...n })) }))
+    setOrgIdState(next.id)
+    setBudgetState(next.budgetDefault)
+    setObjectiveState(assessment.objective)
     setHasRun(false)
   }, [])
 
@@ -121,7 +136,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const value: AppStateValue = {
     org,
     orgId,
+    organizations,
     setOrgId,
+    addOrganization,
     budget,
     setBudget,
     objective,

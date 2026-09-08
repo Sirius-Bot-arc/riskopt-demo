@@ -1034,6 +1034,102 @@ const SHOPSPHERE: Organization = {
   ],
 }
 
+
+export interface OrganizationAssessment {
+  name: string
+  industry: string
+  size: string
+  employees: number
+  endpoints: number
+  cloud: string
+  criticalApps: number
+  internetAssets: number
+  dataSensitivity: string
+  mfa: number
+  edr: number
+  backup: number
+  training: number
+  firewall: number
+  dlp: number
+  vulnerability: number
+  iam: number
+  incidents: number
+  concerns: string
+  riskAppetite: string
+  compliance: string[]
+  budget: number
+  objective: Objective
+}
+
+export function buildOrganizationFromAssessment(a: OrganizationAssessment): Organization {
+  const posture = Math.round(
+    92 -
+      a.mfa * 0.08 - a.edr * 0.06 - a.backup * 0.06 - a.training * 0.04 -
+      a.firewall * 0.04 - a.dlp * 0.03 - a.vulnerability * 0.04 - a.iam * 0.05 -
+      Math.min(a.employees / 5000, 1) * 3 + a.incidents * 2 +
+      (a.dataSensitivity === "Highly sensitive" ? 4 : a.dataSensitivity === "Sensitive" ? 2 : 0),
+  )
+  const riskScore = Math.max(28, Math.min(91, posture))
+  const scale = Math.max(1, a.employees / 500)
+  const baseExposure = Math.round((a.budget * (2.2 + riskScore / 100)) + scale * 450000)
+  const id = `custom-${a.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "organization"}`
+  const industryRisk: Record<string, {name:string; category:string; factor:number}[]> = {
+    "Banking & Finance": [
+      {name:"Financial Fraud",category:"Fraud",factor:1.12},{name:"Credential Theft",category:"Identity",factor:1.04},
+      {name:"Ransomware",category:"Malware",factor:.96},{name:"Phishing",category:"Social Engineering",factor:.88},
+    ],
+    Healthcare: [
+      {name:"Data Leakage",category:"Data Loss",factor:1.12},{name:"Ransomware",category:"Malware",factor:1.08},
+      {name:"Legacy Systems",category:"Infrastructure",factor:1.0},{name:"Credential Theft",category:"Identity",factor:.9},
+    ],
+    "Retail / E-commerce": [
+      {name:"Account Takeover",category:"Identity",factor:1.1},{name:"Payment Fraud",category:"Fraud",factor:1.08},
+      {name:"DDoS",category:"Network",factor:.92},{name:"Data Leakage",category:"Data Loss",factor:1.0},
+    ],
+    Technology: [
+      {name:"Cloud Misconfiguration",category:"Cloud",factor:1.14},{name:"API Attacks",category:"Application",factor:1.08},
+      {name:"Supply Chain",category:"Third Party",factor:1.0},{name:"Credential Theft",category:"Identity",factor:.92},
+    ],
+    Manufacturing: [
+      {name:"Ransomware",category:"Malware",factor:1.1},{name:"OT Intrusion",category:"Operational",factor:1.12},
+      {name:"Supply Chain",category:"Third Party",factor:1.0},{name:"Credential Theft",category:"Identity",factor:.9},
+    ],
+    Government: [
+      {name:"Credential Theft",category:"Identity",factor:1.08},{name:"Data Leakage",category:"Data Loss",factor:1.06},
+      {name:"Ransomware",category:"Malware",factor:1.0},{name:"DDoS",category:"Network",factor:.92},
+    ],
+  }
+  const templates = industryRisk[a.industry] ?? industryRisk.Technology
+  const gap = Math.max(0, (100-riskScore))
+  const risks: Risk[] = templates.map((t,i) => {
+    const score = Math.max(25, Math.min(95, Math.round((riskScore + (i-1)*6 + (a.incidents*2)) * t.factor - gap*.12)))
+    return {
+      id: `${id}-risk-${i}`, name:t.name, score, severity:scoreToSeverityLocal(score), category:t.category,
+      description:`${t.name} can materially affect ${a.name}'s critical operations, data and customer trust.`,
+      affectedAssets:[`${a.criticalApps} critical applications`, `${a.internetAssets} internet-facing assets`, `${a.endpoints.toLocaleString()} endpoints`],
+      contributingFactors:[`${a.cloud} environment`, `${a.dataSensitivity} data`, `${a.incidents} prior incidents reported`],
+      recommendedControls:["mfa","edr","backup"].slice(0,2 + (i%2)),
+      exposure:Math.round(baseExposure * (0.24 - i*.025)),
+      trend:i===0 ? Math.max(-4, Math.min(8, a.incidents+2)) : i%2===0 ? -2 : 1,
+    }
+  })
+  const controls: Control[] = [
+    {id:"mfa",name:"Adaptive MFA",cost:Math.round(a.employees*900),riskReduction:13,exposureReduction:Math.round(baseExposure*.14),category:"Identity",protects:["Credential Theft","Account Takeover"],description:"Adaptive multi-factor authentication blocks stolen-credential attacks across workforce and customer identities."},
+    {id:"edr",name:"Endpoint Detection & Response",cost:Math.round(a.endpoints*1100),riskReduction:12,exposureReduction:Math.round(baseExposure*.12),category:"Malware",protects:["Ransomware","Malware"],description:"Continuous endpoint telemetry and isolation reduces dwell time and limits malware spread."},
+    {id:"backup",name:"Immutable Backup & Recovery",cost:Math.round(Math.max(180000,a.criticalApps*65000)),riskReduction:11,exposureReduction:Math.round(baseExposure*.11),category:"Resilience",protects:["Ransomware","Data Loss"],description:"Immutable recovery points reduce operational impact when systems or data are compromised."},
+    {id:"training",name:"Security Awareness Training",cost:Math.round(Math.max(100000,a.employees*450)),riskReduction:8,exposureReduction:Math.round(baseExposure*.07),category:"Human Risk",protects:["Phishing","Social Engineering"],description:"Role-based training reduces successful social engineering and credential compromise."},
+    {id:"firewall",name:"WAF & Network Protection",cost:Math.round(Math.max(220000,a.internetAssets*18000)),riskReduction:9,exposureReduction:Math.round(baseExposure*.08),category:"Network",protects:["DDoS","API Attacks"],description:"Web application and network controls reduce internet-facing attack paths."},
+    {id:"dlp",name:"Data Loss Prevention",cost:Math.round(Math.max(260000,a.employees*650)),riskReduction:10,exposureReduction:Math.round(baseExposure*.09),category:"Data Loss",protects:["Data Leakage"],description:"DLP monitors sensitive data movement and helps prevent unauthorized exfiltration."},
+  ]
+  const notifications: OrgNotification[] = [
+    {id:"assessment-complete",title:"Risk assessment completed",message:`RiskOpt established a ${riskScore}/100 baseline for ${a.name}.`,time:"Just now",severity:"Info",read:false},
+    {id:"top-risk",title:`${risks[0].name} needs attention`,message:`This is currently the highest-impact risk in your ${a.industry.toLowerCase()} profile.`,time:"Today",severity:risks[0].severity,read:false},
+    {id:"budget",title:"Investment strategy ready",message:`Your ${formatINRShort(a.budget)} budget is ready for optimization.`,time:"Today",severity:"Info",read:true},
+  ]
+  const riskTrend = ["Mar","Apr","May","Jun","Jul","Aug"].map((month,i)=>({month,score:Math.max(25,Math.min(95,riskScore + (5-i)*1.4 + (i===5?0:2)))}))
+  return {id,name:a.name,industry:a.industry,tagline:`${a.size} organization · ${a.employees.toLocaleString()} employees`,budgetDefault:a.budget,budgetMin:Math.max(100000,Math.round(a.budget*.35)),budgetMax:Math.max(a.budget,Math.round(a.budget*1.8)),risks,controls,notifications,riskTrend}
+}
+
 export const ORGANIZATIONS: Organization[] = [ABC_BANK, NOVATECH, MEDICORE, SHOPSPHERE]
 
 // Helpers ------------------------------------------------------------------

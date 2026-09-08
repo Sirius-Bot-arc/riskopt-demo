@@ -17,6 +17,7 @@ interface NavContextValue {
   notificationId: string | null
   openNotification: (id: string) => void
   clearNotification: () => void
+  openOnboarding: () => void
 }
 
 export const NavContext = createContext<NavContextValue | null>(null)

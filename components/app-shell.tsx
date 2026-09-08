@@ -11,6 +11,7 @@ import { SecurityControls } from "@/components/views/security-controls"
 import { InvestmentOptimizer } from "@/components/views/investment-optimizer"
 import { Reports } from "@/components/views/reports"
 import { AppStateProvider } from "@/lib/app-state"
+import { OrganizationOnboarding } from "@/components/organization-onboarding"
 
 export function AppShell() {
   const [view, setViewState] = useState<ViewId>("overview")
@@ -18,6 +19,7 @@ export function AppShell() {
   const [controlId, setControlId] = useState<string | null>(null)
   const [notificationId, setNotificationId] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
 
   const setView = useCallback((v: ViewId) => {
     setRiskId(null)
@@ -66,6 +68,7 @@ export function AppShell() {
           notificationId,
           openNotification,
           clearNotification: () => setNotificationId(null),
+          openOnboarding: () => setOnboardingOpen(true),
         }}
       >
         <div className="flex h-dvh overflow-hidden bg-background">
@@ -84,6 +87,7 @@ export function AppShell() {
           </div>
         </div>
         <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+        <OrganizationOnboarding open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
       </NavContext.Provider>
     </AppStateProvider>
   )

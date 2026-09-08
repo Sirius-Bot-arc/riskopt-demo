@@ -12,9 +12,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { formatINR, formatINRShort, getOverview, severityDistribution, SEVERITY_ORDER } from "@/lib/data"
 import { useAppState } from "@/lib/app-state"
 import { severityStyle } from "@/lib/severity"
+import { RiskOptIntelligence } from "@/components/riskopt-intelligence"
 
 export function Overview() {
-  const { openRisk, setView } = useNav()
+  const { openRisk, setView, openOnboarding } = useNav()
   const { org } = useAppState()
   const overview = getOverview(org)
   const dist = severityDistribution(org)
@@ -68,6 +69,13 @@ export function Overview() {
             trend={{ value: trendDelta, goodDirection: "down" }}
           />
         </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <RiskOptIntelligence />
+        <Button onClick={openOnboarding} variant="outline" className="h-full min-h-20 rounded-2xl border-violet-200 bg-white/70 px-5 text-violet-700 shadow-sm hover:bg-violet-50">
+          <span className="text-lg">+</span> Add organization
+        </Button>
       </div>
 
       {/* Distribution + Top risks */}

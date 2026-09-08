@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ORGANIZATIONS } from "@/lib/data"
 import { useAppState } from "@/lib/app-state"
 import { cn } from "@/lib/utils"
 
@@ -42,8 +41,8 @@ function severityDotClass(severity: string) {
 }
 
 export function Topbar() {
-  const { view, openSearch, notificationId, openNotification, clearNotification } = useNav()
-  const { org, orgId, setOrgId, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
+  const { view, openSearch, notificationId, openNotification, clearNotification, openOnboarding } = useNav()
+  const { org, orgId, organizations, setOrgId, notifications, unreadCount, markNotificationRead, markAllNotificationsRead } =
     useAppState()
   const [orgOpen, setOrgOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
@@ -174,7 +173,7 @@ export function Topbar() {
         </button>
         {orgOpen && (
           <div className="animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 absolute right-0 top-11 z-40 w-72 origin-top-right rounded-2xl border border-border bg-popover p-1.5 shadow-xl ring-1 ring-foreground/10 duration-150">
-            {ORGANIZATIONS.map((o) => (
+            {organizations.map((o) => (
               <button
                 key={o.id}
                 type="button"
@@ -204,6 +203,15 @@ export function Topbar() {
                 {o.id === orgId && <Check className="size-4 shrink-0 text-primary" />}
               </button>
             ))}
+            <div className="my-1 border-t border-border" />
+            <button
+              type="button"
+              onClick={() => { setOrgOpen(false); openOnboarding() }}
+              className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary text-lg">+</span>
+              Add organization
+            </button>
           </div>
         )}
       </div>

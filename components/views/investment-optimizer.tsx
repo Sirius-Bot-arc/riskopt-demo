@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { OBJECTIVES, formatINR, formatINRShort, getControl } from "@/lib/data"
 import { useAppState } from "@/lib/app-state"
 import { cn } from "@/lib/utils"
+import { RiskOptIntelligence } from "@/components/riskopt-intelligence"
 
 const DONUT_COLORS = ["text-chart-1", "text-chart-2", "text-chart-3", "text-chart-4", "text-chart-5", "text-chart-1"]
 
@@ -24,7 +25,17 @@ export function InvestmentOptimizer() {
   const step = Math.max(50000, Math.round((org.budgetMax - org.budgetMin) / 24 / 50000) * 50000)
 
   return (
-    <div key={org.id} className="animate-in fade-in-0 slide-in-from-bottom-1 grid gap-6 duration-300 lg:grid-cols-[22rem_1fr]">
+    <div key={org.id} className="animate-in fade-in-0 slide-in-from-bottom-1 flex flex-col gap-5 duration-300">
+      <div className="relative overflow-hidden rounded-[2rem] border border-violet-200/70 bg-gradient-to-br from-violet-100/80 via-white to-sky-100/70 p-6 md:p-8">
+        <div className="absolute -right-20 -top-28 size-72 rounded-full bg-violet-300/30 blur-3xl"/>
+        <div className="relative max-w-3xl">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-violet-700 shadow-sm"><Sparkles className="size-3.5"/> RiskOpt Optimization Engine</span>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Where should {org.name} invest its next {formatINRShort(budget)}?</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Find the security controls that deliver the greatest measurable reduction in cyber risk — without exceeding your budget.</p>
+        </div>
+      </div>
+      <RiskOptIntelligence compact />
+      <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
       {/* Configuration panel */}
       <div className="flex flex-col gap-4">
         <Card>
@@ -252,6 +263,7 @@ export function InvestmentOptimizer() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
