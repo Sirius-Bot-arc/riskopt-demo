@@ -1,10 +1,10 @@
 "use client"
 
-import { ArrowRight, Check, Info, Loader2, Sparkles, TrendingDown, Wallet } from "lucide-react"
+import { ArrowRight, Check, Info, Loader2, Sparkles, TrendingDown, Wallet, WandSparkles } from "lucide-react"
 import { DonutChart } from "@/components/charts/donut-chart"
 import { RiskGauge } from "@/components/risk-gauge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { OBJECTIVES, formatINR, formatINRShort, getControl } from "@/lib/data"
 import { useAppState } from "@/lib/app-state"
 import { cn } from "@/lib/utils"
@@ -14,256 +14,36 @@ const DONUT_COLORS = ["text-chart-1", "text-chart-2", "text-chart-3", "text-char
 
 export function InvestmentOptimizer() {
   const { org, budget, setBudget, objective, setObjective, running, result, runOptimizer } = useAppState()
-
-  const selectedControls = result
-    ? result.controlIds.map((id) => getControl(org, id)).filter((c): c is NonNullable<typeof c> => !!c)
-    : []
-  const excludedControls = result
-    ? result.excludedIds.map((id) => getControl(org, id)).filter((c): c is NonNullable<typeof c> => !!c)
-    : []
-
+  const selectedControls = result ? result.controlIds.map((id) => getControl(org, id)).filter((c): c is NonNullable<typeof c> => !!c) : []
+  const excludedControls = result ? result.excludedIds.map((id) => getControl(org, id)).filter((c): c is NonNullable<typeof c> => !!c) : []
   const step = Math.max(50000, Math.round((org.budgetMax - org.budgetMin) / 24 / 50000) * 50000)
 
   return (
-    <div key={org.id} className="animate-in fade-in-0 slide-in-from-bottom-1 flex flex-col gap-5 duration-300">
-      <div className="relative overflow-hidden rounded-[2rem] border border-violet-200/70 bg-gradient-to-br from-violet-100/80 via-white to-sky-100/70 p-6 md:p-8">
-        <div className="absolute -right-20 -top-28 size-72 rounded-full bg-violet-300/30 blur-3xl"/>
-        <div className="relative max-w-3xl">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-violet-700 shadow-sm"><Sparkles className="size-3.5"/> RiskOpt Optimization Engine</span>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">Where should {org.name} invest its next {formatINRShort(budget)}?</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Find the security controls that deliver the greatest measurable reduction in cyber risk — without exceeding your budget.</p>
-        </div>
-      </div>
+    <div key={org.id} className="page-enter flex flex-col gap-5">
+      <section className="optimizer-hero">
+        <div className="optimizer-stars" />
+        <div className="relative max-w-4xl"><div className="eyebrow"><span className="eyebrow-dot" /> DECISION LAB · {org.name.toUpperCase()}</div><h2 className="optimizer-title">If you had <span>{formatINRShort(budget)}</span> to spend today,<br />where would you put it?</h2><p className="hero-copy max-w-2xl">RiskOpt tests the control mix against your budget and turns a pile of cyber risks into one defensible investment plan.</p></div>
+        <div className="optimizer-hero-bottom"><div><span className="micro-label">CURRENT POSTURE</span><strong>{result ? result.riskBefore : "—"}<small>/100</small></strong></div><div className="hero-arrow">→</div><div><span className="micro-label">PROJECTED</span><strong className="projected">{result ? result.riskAfter : "?"}<small>/100</small></strong></div><div className="hero-separator" /><div><span className="micro-label">BUDGET</span><strong>{formatINRShort(budget)}</strong></div></div>
+      </section>
+
       <RiskOptIntelligence compact />
-      <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-      {/* Configuration panel */}
-      <div className="flex flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Optimization Goal</CardTitle>
-            <CardDescription>What should the optimizer prioritize?</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {OBJECTIVES.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => setObjective(o.id)}
-                className={cn(
-                  "flex flex-col gap-0.5 rounded-xl border p-3 text-left transition-all",
-                  objective === o.id
-                    ? "border-primary bg-primary/10 shadow-sm"
-                    : "border-border bg-card hover:-translate-y-px hover:bg-accent",
-                )}
-              >
-                <span className="flex items-center justify-between text-sm font-medium">
-                  {o.label}
-                  {objective === o.id && <Check className="size-4 text-primary" />}
-                </span>
-                <span className="text-xs text-muted-foreground">{o.description}</span>
-              </button>
-            ))}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Budget</CardTitle>
-            <CardDescription>Maximum amount {org.name} can invest right now</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-semibold tabular-nums">{formatINRShort(budget)}</span>
-              <span className="text-xs text-muted-foreground">{formatINR(budget)}</span>
-            </div>
-            <input
-              type="range"
-              min={org.budgetMin}
-              max={org.budgetMax}
-              step={step}
-              value={budget}
-              onChange={(e) => setBudget(Number(e.target.value))}
-              className="w-full accent-primary"
-              aria-label="Budget"
-            />
-            <div className="flex justify-between text-[11px] text-muted-foreground">
-              <span>{formatINRShort(org.budgetMin)}</span>
-              <span>{formatINRShort(org.budgetMax)}</span>
-            </div>
-            <Button onClick={runOptimizer} disabled={running} className="w-full">
-              {running ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Optimizing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="size-4" />
-                  Run Optimization
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="grid gap-5 lg:grid-cols-[20rem_1fr]">
+        <aside className="flex flex-col gap-4">
+          <Card className="premium-card"><CardHeader><p className="section-kicker">01 · STRATEGY</p><CardTitle className="mt-1 text-lg">What should win?</CardTitle></CardHeader><CardContent className="flex flex-col gap-2">{OBJECTIVES.map((o) => <button key={o.id} type="button" onClick={() => setObjective(o.id)} className={cn("objective-card", objective === o.id && "objective-active")}><span className="flex items-center justify-between text-sm font-bold">{o.label}{objective === o.id && <Check className="size-4" />}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{o.description}</span></button>)}</CardContent></Card>
+          <Card className="premium-card"><CardHeader><p className="section-kicker">02 · CAPITAL</p><CardTitle className="mt-1 text-lg">Investment ceiling</CardTitle></CardHeader><CardContent><div className="budget-readout"><span>{formatINRShort(budget)}</span><small>{formatINR(budget)}</small></div><input type="range" min={org.budgetMin} max={org.budgetMax} step={step} value={budget} onChange={(e) => setBudget(Number(e.target.value))} className="budget-range" aria-label="Budget" /><div className="flex justify-between text-[11px] font-medium text-slate-400"><span>{formatINRShort(org.budgetMin)}</span><span>{formatINRShort(org.budgetMax)}</span></div><Button onClick={runOptimizer} disabled={running} className="mt-5 h-12 w-full rounded-2xl shadow-lg shadow-violet-200/60">{running ? <><Loader2 className="size-4 animate-spin" /> Thinking...</> : <><WandSparkles className="size-4" /> Run optimization</>}</Button></CardContent></Card>
+        </aside>
 
-      {/* Results */}
-      <div className="flex flex-col gap-4">
-        {!result && !running && (
-          <Card className="flex min-h-96 flex-1 items-center justify-center border-dashed">
-            <div className="flex max-w-sm flex-col items-center gap-3 px-6 text-center">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                <Sparkles className="size-6" />
-              </span>
-              <h3 className="text-lg font-semibold">Ready to optimize</h3>
-              <p className="text-sm text-muted-foreground text-pretty">
-                Pick a goal and budget, then run the optimizer to see which controls deliver the
-                greatest risk reduction for {org.name}&rsquo;s money.
-              </p>
-            </div>
-          </Card>
-        )}
+        <div className="min-w-0">
+          {!result && !running && <div className="optimizer-empty"><div className="empty-orbit"><Sparkles className="size-6" /></div><p className="section-kicker">READY WHEN YOU ARE</p><h3>Let the math pick the mix.</h3><p>Choose an objective, set your ceiling, and let RiskOpt evaluate the combinations.</p><div className="empty-line"><span /> <span /> <span /> <span /></div></div>}
+          {running && <div className="optimizer-empty"><div className="empty-orbit spin"><Loader2 className="size-6 animate-spin" /></div><p className="section-kicker">OPTIMIZATION IN PROGRESS</p><h3>Testing the trade-offs…</h3><p>Evaluating control combinations against {org.name}&rsquo;s budget.</p></div>}
+          {result && !running && <div className="flex flex-col gap-5">
+            <Card className="impact-card overflow-hidden"><div className="impact-wash" /><CardHeader className="relative"><p className="section-kicker">03 · OUTCOME</p><CardTitle className="mt-1 text-2xl">The plan changes the picture.</CardTitle></CardHeader><CardContent className="relative"><div className="grid items-center gap-5 md:grid-cols-[1fr_auto_1fr]"><div className="impact-side"><RiskGauge score={result.riskBefore} size={142} strokeWidth={10} label="before" /><span className="impact-caption">Current posture</span></div><ArrowRight className="mx-auto hidden size-8 text-violet-300 md:block" /><div className="impact-side"><RiskGauge score={result.riskAfter} size={142} strokeWidth={10} label="after" /><span className="impact-caption success">Projected posture</span></div></div><div className="impact-metrics"><div><span>Risk reduction</span><strong>-{result.percentReduction}%</strong></div><div><span>Exposure avoided</span><strong>{formatINRShort(result.exposureReduced)}</strong></div><div><span>Capital deployed</span><strong>{formatINRShort(result.totalInvestment)}</strong></div></div></CardContent></Card>
 
-        {running && (
-          <Card className="flex min-h-96 flex-1 items-center justify-center">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <Loader2 className="size-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Evaluating control combinations against {org.name}&rsquo;s budget...
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {result && !running && (
-          <div className="animate-in fade-in-0 slide-in-from-bottom-2 flex flex-col gap-4 duration-500">
-            {/* Before / after */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Projected Impact</CardTitle>
-                <CardDescription>Estimated risk posture after implementing the plan</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center justify-center gap-6 sm:justify-around">
-                  <div className="flex flex-col items-center gap-1">
-                    <RiskGauge score={result.riskBefore} size={132} label="Before" />
-                  </div>
-                  <ArrowRight className="size-6 text-muted-foreground" />
-                  <div className="flex flex-col items-center gap-1">
-                    <RiskGauge score={result.riskAfter} size={132} label="After" />
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-3 border-t border-border pt-4">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Risk Reduced</p>
-                    <p className="text-lg font-semibold text-success">-{result.percentReduction}%</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Exposure Cut</p>
-                    <p className="text-lg font-semibold text-success">{formatINRShort(result.exposureReduced)}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">Invested</p>
-                    <p className="text-lg font-semibold">{formatINRShort(result.totalInvestment)}</p>
-                  </div>
-                </div>
-                <p className="mt-4 rounded-xl bg-primary/10 px-4 py-2 text-center text-sm font-medium text-primary">
-                  {result.percentReduction}% risk reduction · {formatINRShort(result.exposureReduced)} exposure
-                  reduced for {formatINRShort(result.totalInvestment)} invested
-                </p>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
-              {/* Recommended plan */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recommended Investment Plan</CardTitle>
-                  <CardDescription>
-                    {selectedControls.length} controls selected within {formatINRShort(budget)} budget
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-2">
-                  {selectedControls.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex flex-col gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2.5"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-success/15 text-success">
-                          <Check className="size-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium">{c.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            Protects: {c.protects.join(", ")}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold tabular-nums">{formatINRShort(c.cost)}</p>
-                          <p className="inline-flex items-center gap-0.5 text-xs text-success">
-                            <TrendingDown className="size-3" />-{c.riskReduction}%
-                          </p>
-                        </div>
-                      </div>
-                      {result.explanations[c.id] && (
-                        <p className="flex items-start gap-1.5 pl-11 text-xs text-muted-foreground">
-                          <Info className="mt-0.5 size-3 shrink-0" />
-                          {result.explanations[c.id]}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                  {excludedControls.length > 0 && (
-                    <p className="mt-1 px-1 text-xs text-muted-foreground">
-                      Excluded: {excludedControls.map((c) => c.name).join(", ")}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Budget allocation */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Budget Allocation</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4">
-                  <DonutChart
-                    slices={[
-                      ...selectedControls.map((c, i) => ({
-                        label: c.name,
-                        value: c.cost,
-                        color: DONUT_COLORS[i % DONUT_COLORS.length],
-                      })),
-                      ...(result.remainingBudget > 0
-                        ? [{ label: "Unspent", value: result.remainingBudget, color: "text-muted-foreground/40" }]
-                        : []),
-                    ]}
-                    centerValue={formatINRShort(result.totalInvestment)}
-                    centerLabel="allocated"
-                  />
-                  <div className="flex w-full flex-col gap-1.5">
-                    {selectedControls.map((c, i) => (
-                      <div key={c.id} className="flex items-center gap-2 text-xs">
-                        <span
-                          className={cn("size-2.5 rounded-full bg-current", DONUT_COLORS[i % DONUT_COLORS.length])}
-                        />
-                        <span className="flex-1 text-muted-foreground">{c.name}</span>
-                        <span className="tabular-nums">{formatINRShort(c.cost)}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center gap-2 border-t border-border pt-1.5 text-xs">
-                      <Wallet className="size-3 text-muted-foreground" />
-                      <span className="flex-1 text-muted-foreground">Unspent</span>
-                      <span className="tabular-nums">{formatINRShort(Math.max(0, result.remainingBudget))}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-      </div>
+              <div className="grid gap-5 lg:grid-cols-[1fr_18rem]"><Card className="premium-card"><CardHeader><p className="section-kicker">04 · RECOMMENDATION</p><CardTitle className="mt-1 text-xl">Recommended investment plan</CardTitle><p className="text-sm text-slate-500">{selectedControls.length} controls selected within {formatINRShort(budget)}.</p></CardHeader><CardContent className="flex flex-col gap-2">{selectedControls.map((c, i) => <div key={c.id} className="plan-row" style={{ animationDelay: `${i * 70}ms` }}><span className="plan-number">0{i + 1}</span><span className="plan-check"><Check className="size-4" /></span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-slate-900">{c.name}</p><p className="mt-0.5 truncate text-xs text-slate-500">Protects {c.protects.join(" · ")}</p>{result.explanations[c.id] && <p className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-slate-500"><Info className="mt-0.5 size-3 shrink-0" />{result.explanations[c.id]}</p>}</div><div className="text-right"><p className="text-sm font-bold">{formatINRShort(c.cost)}</p><p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><TrendingDown className="size-3" />-{c.riskReduction}%</p></div></div>)}{excludedControls.length > 0 && <p className="mt-2 px-1 text-xs text-slate-400">Not selected this round: {excludedControls.map((c) => c.name).join(", ")}</p>}</CardContent></Card>
+                <Card className="premium-card"><CardHeader><p className="section-kicker">CAPITAL MIX</p><CardTitle className="mt-1 text-lg">Where the money goes</CardTitle></CardHeader><CardContent className="flex flex-col items-center gap-4"><DonutChart slices={[...selectedControls.map((c, i) => ({ label: c.name, value: c.cost, color: DONUT_COLORS[i % DONUT_COLORS.length] })), ...(result.remainingBudget > 0 ? [{ label: "Unspent", value: result.remainingBudget, color: "text-slate-300" }] : [])]} centerValue={formatINRShort(result.totalInvestment)} centerLabel="allocated" /><div className="w-full space-y-2">{selectedControls.map((c, i) => <div key={c.id} className="flex items-center gap-2 text-xs"><span className={cn("size-2.5 rounded-full bg-current", DONUT_COLORS[i % DONUT_COLORS.length])} /><span className="flex-1 truncate text-slate-500">{c.name}</span><span className="font-semibold tabular-nums">{formatINRShort(c.cost)}</span></div>)}<div className="flex items-center gap-2 border-t border-slate-100 pt-2 text-xs"><Wallet className="size-3 text-slate-400" /><span className="flex-1 text-slate-500">Unspent</span><span className="font-semibold">{formatINRShort(Math.max(0, result.remainingBudget))}</span></div></div></CardContent></Card></div>
+            </div>}
+        </div>
       </div>
     </div>
   )
