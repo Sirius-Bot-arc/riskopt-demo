@@ -2,7 +2,7 @@
 // Each organization carries its own fully independent dataset (risks, controls,
 // notifications, trend history) so switching organizations changes every part
 // of the product. Shapes are intentionally close to what a real backend would
-// return, so the UI can later be wired to real endpoints with minimal changes.
+// return, so the UI can later be wired to real endpoints with minimal changes. 
 
 export type Severity = "Critical" | "High" | "Medium" | "Low"
 export type Objective = "max-reduction" | "best-value" | "balanced"
