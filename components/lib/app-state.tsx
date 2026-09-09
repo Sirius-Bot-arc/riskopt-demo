@@ -171,6 +171,7 @@ export function AppStateProvider({
 
       if (!response.ok) {
         const errorText = await response.text()
+
         throw new Error(
           `Optimization failed: ${response.status} ${errorText}`,
         )
@@ -196,21 +197,45 @@ export function AppStateProvider({
         .filter((control) => !selectedNames.has(control.name))
         .map((control) => control.id)
 
+      /*
+       * Keep the backend calculation, but apply a realistic
+       * safety floor in the frontend as well.
+       *
+       * This prevents RiskOpt from ever presenting an
+       * unrealistically perfect "almost zero risk" result.
+       */
+      const riskBefore = Number(data.risk_before)
+
+      const riskAfter = Math.max(
+        10,
+        Number(data.risk_after),
+      )
+
       const exposureBefore = org.exposure
 
       const exposureAfter =
-        data.risk_before > 0
+        riskBefore > 0
           ? Math.max(
               Math.round(
                 exposureBefore *
-                  (data.risk_after / data.risk_before),
+                  (riskAfter / riskBefore),
               ),
               0,
             )
-          : 0
+          : exposureBefore
 
       const exposureReduced =
         exposureBefore - exposureAfter
+
+      const actualRiskReduction =
+        riskBefore - riskAfter
+
+      const riskReductionPercent =
+        riskBefore > 0
+          ? Math.round(
+              (actualRiskReduction / riskBefore) * 100,
+            )
+          : 0
 
       const explanations: Record<string, string> = {}
 
@@ -244,12 +269,10 @@ export function AppStateProvider({
         excludedIds,
         totalInvestment: data.total_investment,
         remainingBudget: data.remaining_budget,
-        expectedReduction:
-          data.risk_before - data.risk_after,
-        percentReduction:
-          data.risk_reduction_percent,
-        riskBefore: data.risk_before,
-        riskAfter: data.risk_after,
+        expectedReduction: actualRiskReduction,
+        percentReduction: riskReductionPercent,
+        riskBefore,
+        riskAfter,
         exposureBefore,
         exposureAfter,
         exposureReduced,
@@ -283,7 +306,10 @@ export function AppStateProvider({
         }
       })
     } catch (error) {
-      console.error("RiskOpt optimization error:", error)
+      console.error(
+        "RiskOpt optimization error:",
+        error,
+      )
 
       alert(
         "RiskOpt couldn't reach the optimization engine. Please try again.",
