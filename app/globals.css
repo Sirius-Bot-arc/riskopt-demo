@@ -28,3 +28,46 @@ button { -webkit-tap-highlight-color: transparent; }
 .brand-mark{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(135deg,#6d5bd0,#8b5cf6);color:white;box-shadow:0 12px 25px -16px #4c1d95}.nav-kicker{padding:0 13px 9px;font-size:9px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#a0a8b7}.nav-item{display:flex;align-items:center;gap:12px;border-radius:13px;padding:11px 13px;font-size:13px;font-weight:650;color:#667085;transition:.18s}.nav-item:hover{background:rgba(139,92,246,.06);color:#344054;transform:translateX(2px)}.nav-active{background:linear-gradient(100deg,#ede9fe,#eef5ff);color:#5b35b5;box-shadow:inset 0 0 0 1px rgba(167,139,250,.15)}.nav-active svg:first-child{color:#7c3aed}.org-mini{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid rgba(255,255,255,.9);border-radius:15px;background:rgba(255,255,255,.62)}.org-mini-avatar{display:flex;flex:none;width:30px;height:30px;align-items:center;justify-content:center;border-radius:10px;background:#ede9fe;color:#6d28d9;font-size:12px;font-weight:800}
 .input-premium{width:100%;border-radius:.9rem;border:1px solid #e5e7eb;background:rgba(255,255,255,.9);padding:.7rem .85rem;color:#0f172a;outline:none}.input-premium:focus{border-color:#a78bfa;box-shadow:0 0 0 4px rgba(139,92,246,.1)}
 @media (max-width: 900px){.hero-shell,.optimizer-hero{padding:1.35rem;border-radius:1.5rem}.risk-orbit-card{margin-top:15px}.hero-title{font-size:2.55rem}.optimizer-hero-bottom{flex-wrap:wrap}.hero-separator{display:none}.impact-metrics{grid-template-columns:1fr}.intel-action{display:none}}
+
+/* --- RiskOpt cute/futuristic motion layer --- */
+.optimizer-hero{position:relative;overflow:hidden;isolation:isolate}
+.optimizer-hero::after{content:"";position:absolute;inset:auto -15% -55% 35%;height:260px;background:radial-gradient(ellipse,rgba(167,139,250,.24),transparent 68%);filter:blur(10px);animation:heroBreathe 5s ease-in-out infinite;pointer-events:none}
+.optimizer-bubble{position:absolute;border-radius:999px;pointer-events:none;z-index:0;filter:blur(.2px);animation:bubbleFloat 7s ease-in-out infinite}
+.bubble-one{width:110px;height:110px;right:5%;top:20%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.95),rgba(196,181,253,.55) 45%,rgba(139,92,246,0) 72%);box-shadow:0 0 50px rgba(139,92,246,.15)}
+.bubble-two{width:70px;height:70px;right:25%;bottom:8%;background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.9),rgba(125,211,252,.5) 45%,transparent 72%);animation-delay:-2.5s}
+.optimizer-sparkle{position:absolute;z-index:1;color:rgba(124,58,237,.55);font-size:18px;animation:sparkleFloat 4s ease-in-out infinite}
+.sparkle-one{right:15%;top:12%;animation-delay:-1s}.sparkle-two{right:31%;top:58%;font-size:12px;animation-delay:-2.2s}
+.hero-chips{position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:7px;margin-top:17px}
+.hero-chips span{padding:7px 10px;border:1px solid rgba(255,255,255,.75);border-radius:999px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);font-size:10px;font-weight:750;color:#6d5bd0;box-shadow:0 8px 22px -18px rgba(76,29,149,.5);transition:transform .2s,background .2s}
+.hero-chips span:hover{transform:translateY(-2px) rotate(-1deg);background:rgba(255,255,255,.8)}
+.budget-helper{margin-top:5px;font-size:11px;line-height:1.5;color:#98a0af}
+.optimizer-run{position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s!important}
+.optimizer-run::before{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.35) 45%,transparent 70%);transform:translateX(-120%);animation:buttonShine 3.8s ease-in-out infinite}
+.optimizer-run:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 18px 35px -18px rgba(124,58,237,.5)!important}
+.optimizer-run:active{transform:scale(.985)}
+.button-spark{margin-left:2px;animation:twinkle 1.4s ease-in-out infinite}
+.objective-card{position:relative;overflow:hidden}
+.objective-card::after{content:"";position:absolute;width:70px;height:70px;right:-35px;bottom:-35px;border-radius:999px;background:rgba(196,181,253,.14);transition:transform .3s}
+.objective-card:hover::after{transform:scale(2.2)}
+.budget-range{height:8px;border-radius:999px;cursor:pointer;accent-color:#7c3aed}
+.budget-range::-webkit-slider-thumb{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.budget-range:hover::-webkit-slider-thumb{transform:scale(1.18);box-shadow:0 0 0 7px rgba(124,58,237,.12)}
+.impact-card{position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,255,255,.94),rgba(248,245,255,.92),rgba(239,249,255,.92));box-shadow:0 24px 60px -42px rgba(76,29,149,.5)}
+.impact-card::before{content:"";position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent 0 65%,rgba(167,139,250,.08) 75%,transparent 85%);animation:slowSpin 18s linear infinite;pointer-events:none}
+.plan-row{animation:planIn .5s cubic-bezier(.2,.8,.2,1) both;transition:transform .2s,background .2s,box-shadow .2s}
+.plan-row:hover{transform:translateX(5px);background:linear-gradient(90deg,#fbf9ff,#fff);box-shadow:0 10px 25px -24px rgba(76,29,149,.5)}
+.plan-check{transition:transform .25s,box-shadow .25s}
+.plan-row:hover .plan-check{transform:scale(1.12) rotate(4deg);box-shadow:0 7px 18px -10px rgba(16,185,129,.65)}
+.empty-orbit{animation:orbitBreath 3.5s ease-in-out infinite}
+.empty-line span{animation:linePulse 1.8s ease-in-out infinite}
+.empty-line span:nth-child(2){animation-delay:.15s}.empty-line span:nth-child(3){animation-delay:.3s}.empty-line span:nth-child(4){animation-delay:.45s}
+@keyframes heroBreathe{50%{transform:scale(1.08) translateY(-8px);opacity:.7}}
+@keyframes bubbleFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-8px,-14px,0)}}
+@keyframes sparkleFloat{0%,100%{opacity:.35;transform:translateY(0) scale(.9) rotate(0)}50%{opacity:.9;transform:translateY(-9px) scale(1.12) rotate(12deg)}}
+@keyframes buttonShine{0%,58%{transform:translateX(-120%)}78%,100%{transform:translateX(120%)}}
+@keyframes twinkle{0%,100%{opacity:.45;transform:scale(.8) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(18deg)}}
+@keyframes slowSpin{to{transform:rotate(360deg)}}
+@keyframes planIn{from{opacity:0;transform:translateY(10px) translateX(-5px)}to{opacity:1;transform:none}}
+@keyframes orbitBreath{50%{transform:translateY(-5px) scale(1.04);box-shadow:0 0 0 14px rgba(196,181,253,.1),0 20px 40px -25px #7c3aed}}
+@keyframes linePulse{0%,100%{opacity:.45;transform:scaleX(.9)}50%{opacity:1;transform:scaleX(1.12)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}}
