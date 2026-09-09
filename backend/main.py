@@ -89,10 +89,13 @@ def run_optimization(request: OptimizationRequest):
 
     risk_before = org["risk"]
 
-    # Prevent the calculated risk from going below zero.
+    # Apply diminishing returns so multiple controls
+    # don't unrealistically eliminate almost all risk.
+    effective_reduction = total_risk_reduction * 0.65
+
     risk_after = max(
-        0,
-        risk_before - total_risk_reduction,
+        10,
+        round(risk_before - effective_reduction, 1),
     )
 
     risk_reduction_percent = (
