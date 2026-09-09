@@ -34,7 +34,11 @@ def _maximum_risk_reduction(
         if cost_units > capacity:
             continue
 
-        for current in range(capacity, cost_units - 1, -1):
+        for current in range(
+            capacity,
+            cost_units - 1,
+            -1,
+        ):
             candidate = (
                 dp[current - cost_units]
                 + control["risk_reduction"]
@@ -43,12 +47,16 @@ def _maximum_risk_reduction(
             if candidate > dp[current]:
                 dp[current] = candidate
                 selected[current] = (
-                    selected[current - cost_units] + [index]
+                    selected[current - cost_units]
+                    + [index]
                 )
 
     chosen_indexes = selected[capacity]
 
-    return [controls[i] for i in chosen_indexes]
+    return [
+        controls[i]
+        for i in chosen_indexes
+    ]
 
 
 def _best_value(
@@ -58,7 +66,8 @@ def _best_value(
     ranked = sorted(
         controls,
         key=lambda control: (
-            control["risk_reduction"] / control["cost"]
+            control["risk_reduction"]
+            / control["cost"]
         ),
         reverse=True,
     )
@@ -90,11 +99,13 @@ def _balanced(
 
     for control in controls:
         efficiency = (
-            control["risk_reduction"] / control["cost"]
+            control["risk_reduction"]
+            / control["cost"]
         )
 
         normalized_reduction = (
-            control["risk_reduction"] / max_reduction
+            control["risk_reduction"]
+            / max_reduction
         )
 
         score = (
@@ -102,7 +113,9 @@ def _balanced(
             + efficiency * 1000000 * 0.3
         )
 
-        ranked.append((score, control))
+        ranked.append(
+            (score, control)
+        )
 
     ranked.sort(
         key=lambda item: item[0],
