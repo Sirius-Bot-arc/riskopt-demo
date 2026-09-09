@@ -9,7 +9,7 @@ import {
   type OrganizationAssessment,
   buildOrganizationFromAssessment,
 } from "@/lib/data"
-import { runOptimization, type OptimizationResult } from "@/lib/optimizer"
+import type { OptimizationResult } from "@/lib/optimizer"
 
 interface AppStateValue {
   org: Organization
@@ -37,66 +37,231 @@ interface AppStateValue {
 
 const AppStateContext = createContext<AppStateValue | null>(null)
 
+const BACKEND_URL = "https://riskopt-demo.onrender.com"
+
 export function useAppState(): AppStateValue {
   const ctx = useContext(AppStateContext)
-  if (!ctx) throw new Error("useAppState must be used within AppStateProvider")
+
+  if (!ctx) {
+    throw new Error("useAppState must be used within AppStateProvider")
+  }
+
   return ctx
 }
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
+export function AppStateProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const [customOrgs, setCustomOrgs] = useState<Organization[]>([])
-  const organizations = useMemo(() => [...ORGANIZATIONS, ...customOrgs], [customOrgs])
-  const [orgId, setOrgIdState] = useState<string>(ORGANIZATIONS[0].id)
-  const org = useMemo(() => organizations.find((o) => o.id === orgId) ?? ORGANIZATIONS[0], [organizations, orgId])
 
-  const [budget, setBudgetState] = useState<number>(ORGANIZATIONS[0].budgetDefault)
-  const [objective, setObjectiveState] = useState<Objective>("max-reduction")
+  const organizations = useMemo(
+    () => [...ORGANIZATIONS, ...customOrgs],
+    [customOrgs],
+  )
+
+  const [orgId, setOrgIdState] = useState<string>(
+    ORGANIZATIONS[0].id,
+  )
+
+  const org = useMemo(
+    () =>
+      organizations.find((o) => o.id === orgId) ??
+      ORGANIZATIONS[0],
+    [organizations, orgId],
+  )
+
+  const [budget, setBudgetState] = useState<number>(
+    ORGANIZATIONS[0].budgetDefault,
+  )
+
+  const [objective, setObjectiveState] =
+    useState<Objective>("max-reduction")
+
   const [running, setRunning] = useState(false)
   const [hasRun, setHasRun] = useState(false)
 
-  const [notifState, setNotifState] = useState<Record<string, OrgNotification[]>>(() => {
+  const [backendResult, setBackendResult] =
+    useState<OptimizationResult | null>(null)
+
+  const [notifState, setNotifState] = useState<
+    Record<string, OrgNotification[]>
+  >(() => {
     const initial: Record<string, OrgNotification[]> = {}
-    for (const o of ORGANIZATIONS) initial[o.id] = o.notifications.map((n) => ({ ...n }))
+
+    for (const o of ORGANIZATIONS) {
+      initial[o.id] = o.notifications.map((n) => ({ ...n }))
+    }
+
     return initial
   })
 
-  const setOrgId = useCallback((id: string) => {
-    setOrgIdState(id)
-    const next = organizations.find((o) => o.id === id) ?? ORGANIZATIONS[0]
-    setBudgetState(next.budgetDefault)
-    setHasRun(false)
-  }, [organizations])
+  const setOrgId = useCallback(
+    (id: string) => {
+      setOrgIdState(id)
 
-  const addOrganization = useCallback((assessment: OrganizationAssessment) => {
-    const next = buildOrganizationFromAssessment(assessment)
-    setCustomOrgs((prev) => [...prev.filter((o) => o.id !== next.id), next])
-    setNotifState((prev) => ({ ...prev, [next.id]: next.notifications.map((n) => ({ ...n })) }))
-    setOrgIdState(next.id)
-    setBudgetState(next.budgetDefault)
-    setObjectiveState(assessment.objective)
-    setHasRun(false)
-  }, [])
+      const next =
+        organizations.find((o) => o.id === id) ??
+        ORGANIZATIONS[0]
+
+      setBudgetState(next.budgetDefault)
+      setHasRun(false)
+      setBackendResult(null)
+    },
+    [organizations],
+  )
+
+  const addOrganization = useCallback(
+    (assessment: OrganizationAssessment) => {
+      const next = buildOrganizationFromAssessment(assessment)
+
+      setCustomOrgs((prev) => [
+        ...prev.filter((o) => o.id !== next.id),
+        next,
+      ])
+
+      setNotifState((prev) => ({
+        ...prev,
+        [next.id]: next.notifications.map((n) => ({ ...n })),
+      }))
+
+      setOrgIdState(next.id)
+      setBudgetState(next.budgetDefault)
+      setObjectiveState(assessment.objective)
+      setHasRun(false)
+      setBackendResult(null)
+    },
+    [],
+  )
 
   const setBudget = useCallback((value: number) => {
     setBudgetState(value)
     setHasRun(false)
+    setBackendResult(null)
   }, [])
 
   const setObjective = useCallback((value: Objective) => {
     setObjectiveState(value)
     setHasRun(false)
+    setBackendResult(null)
   }, [])
 
-  const result = useMemo(() => runOptimization(org, budget, objective), [org, budget, objective])
-
-  const runOptimizer = useCallback(() => {
+  const runOptimizer = useCallback(async () => {
     setRunning(true)
-    window.setTimeout(() => {
-      setRunning(false)
+    setHasRun(false)
+
+    try {
+      const backendObjective =
+        objective === "max-reduction"
+          ? "maximum-risk-reduction"
+          : objective
+
+      const response = await fetch(`${BACKEND_URL}/optimize`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          organization: org.name,
+          budget,
+          objective: backendObjective,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(
+          `Optimization failed: ${response.status} ${errorText}`,
+        )
+      }
+
+      const data = await response.json()
+
+      const selectedNames = new Set(
+        data.selected_controls.map(
+          (control: { name: string }) => control.name,
+        ),
+      )
+
+      const selectedControls = org.controls.filter((control) =>
+        selectedNames.has(control.name),
+      )
+
+      const controlIds = selectedControls.map(
+        (control) => control.id,
+      )
+
+      const excludedIds = org.controls
+        .filter((control) => !selectedNames.has(control.name))
+        .map((control) => control.id)
+
+      const exposureBefore = org.exposure
+
+      const exposureAfter =
+        data.risk_before > 0
+          ? Math.max(
+              Math.round(
+                exposureBefore *
+                  (data.risk_after / data.risk_before),
+              ),
+              0,
+            )
+          : 0
+
+      const exposureReduced =
+        exposureBefore - exposureAfter
+
+      const explanations: Record<string, string> = {}
+
+      for (const control of selectedControls) {
+        const backendControl = data.selected_controls.find(
+          (item: { name: string }) =>
+            item.name === control.name,
+        )
+
+        if (backendControl) {
+          const perLakh = (
+            backendControl.risk_reduction /
+            (backendControl.cost / 100000)
+          ).toFixed(1)
+
+          if (objective === "max-reduction") {
+            explanations[control.id] =
+              `${control.name} was prioritized for its strong absolute risk reduction of ${backendControl.risk_reduction} points within the available budget.`
+          } else if (objective === "best-value") {
+            explanations[control.id] =
+              `${control.name} provides approximately ${perLakh} risk-reduction points per ₹1L invested, making it a strong value choice.`
+          } else {
+            explanations[control.id] =
+              `${control.name} provides ${backendControl.risk_reduction} points of risk reduction while contributing to broader risk coverage.`
+          }
+        }
+      }
+
+      const result: OptimizationResult = {
+        controlIds,
+        excludedIds,
+        totalInvestment: data.total_investment,
+        remainingBudget: data.remaining_budget,
+        expectedReduction:
+          data.risk_before - data.risk_after,
+        percentReduction:
+          data.risk_reduction_percent,
+        riskBefore: data.risk_before,
+        riskAfter: data.risk_after,
+        exposureBefore,
+        exposureAfter,
+        exposureReduced,
+        explanations,
+      }
+
+      setBackendResult(result)
       setHasRun(true)
+
       setNotifState((prev) => {
         const current = prev[org.id] ?? []
-        const already = current.some((n) => n.id === "optimization-run")
+
         const entry: OrgNotification = {
           id: "optimization-run",
           title: "Budget optimization completed",
@@ -107,20 +272,42 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           severity: "Info",
           read: false,
         }
-        const withoutOld = current.filter((n) => n.id !== "optimization-run")
-        return { ...prev, [org.id]: already ? [entry, ...withoutOld] : [entry, ...current] }
+
+        const withoutOld = current.filter(
+          (n) => n.id !== "optimization-run",
+        )
+
+        return {
+          ...prev,
+          [org.id]: [entry, ...withoutOld],
+        }
       })
-    }, 900)
-  }, [org, budget])
+    } catch (error) {
+      console.error("RiskOpt optimization error:", error)
+
+      alert(
+        "RiskOpt couldn't reach the optimization engine. Please try again.",
+      )
+    } finally {
+      setRunning(false)
+    }
+  }, [org, budget, objective])
 
   const notifications = notifState[org.id] ?? []
-  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const unreadCount = notifications.filter(
+    (n) => !n.read,
+  ).length
 
   const markNotificationRead = useCallback(
     (id: string) => {
       setNotifState((prev) => ({
         ...prev,
-        [org.id]: (prev[org.id] ?? []).map((n) => (n.id === id ? { ...n, read: true } : n)),
+        [org.id]: (prev[org.id] ?? []).map((n) =>
+          n.id === id
+            ? { ...n, read: true }
+            : n,
+        ),
       }))
     },
     [org.id],
@@ -129,7 +316,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const markAllNotificationsRead = useCallback(() => {
     setNotifState((prev) => ({
       ...prev,
-      [org.id]: (prev[org.id] ?? []).map((n) => ({ ...n, read: true })),
+      [org.id]: (prev[org.id] ?? []).map((n) => ({
+        ...n,
+        read: true,
+      })),
     }))
   }, [org.id])
 
@@ -145,7 +335,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setObjective,
     running,
     hasRun,
-    result: hasRun ? result : null,
+    result: hasRun ? backendResult : null,
     runOptimizer,
     notifications,
     unreadCount,
@@ -153,5 +343,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     markAllNotificationsRead,
   }
 
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>
+  return (
+    <AppStateContext.Provider value={value}>
+      {children}
+    </AppStateContext.Provider>
+  )
 }
