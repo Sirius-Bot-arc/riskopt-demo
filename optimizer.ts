@@ -138,7 +138,18 @@ export function runOptimization(org: Organization, budget: number, objective: Ob
   const totalInvestment = selected.reduce((sum, c) => sum + c.cost, 0)
   const rawReduction = selected.reduce((sum, c) => sum + c.riskReduction, 0)
   const riskBefore = overview.overallRisk
-  const riskAfter = Math.max(5, Math.round(riskBefore - rawReduction))
+
+  // Security controls overlap, have imperfect coverage, and cannot eliminate
+  // enterprise cyber risk completely. Convert the catalog's control-level
+  // points into a more realistic portfolio-level effect with diminishing
+  // returns as more controls are stacked.
+  const portfolioEffectiveness = Math.max(0.48, 0.70 - rawReduction * 0.001)
+  const effectiveReduction = rawReduction * portfolioEffectiveness
+  const minimumResidualRisk = Math.max(20, Math.round(riskBefore * 0.24))
+  const riskAfter = Math.max(
+    minimumResidualRisk,
+    Math.round(riskBefore - effectiveReduction),
+  )
   const expectedReduction = riskBefore - riskAfter
   const percentReduction = riskBefore > 0 ? Math.round((expectedReduction / riskBefore) * 100) : 0
 

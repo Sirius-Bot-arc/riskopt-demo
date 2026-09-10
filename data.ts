@@ -94,7 +94,7 @@ const ABC_BANK: Organization = {
   tagline: "Retail & commercial banking, 2.4M customers",
   budgetDefault: 1500000,
   budgetMin: 300000,
-  budgetMax: 2600000,
+  budgetMax: 3000000,
   risks: [
     {
       id: "ransomware",
@@ -329,7 +329,7 @@ const NOVATECH: Organization = {
   tagline: "B2B SaaS platform, cloud-native infrastructure",
   budgetDefault: 1000000,
   budgetMin: 200000,
-  budgetMax: 1800000,
+  budgetMax: 3000000,
   risks: [
     {
       id: "cloud-misconfig",
@@ -575,7 +575,7 @@ const MEDICORE: Organization = {
   tagline: "Multi-site hospital network & telehealth platform",
   budgetDefault: 900000,
   budgetMin: 200000,
-  budgetMax: 1900000,
+  budgetMax: 3000000,
   risks: [
     {
       id: "ransomware",
@@ -810,7 +810,7 @@ const SHOPSPHERE: Organization = {
   tagline: "Omnichannel retail, online + in-store payments",
   budgetDefault: 1100000,
   budgetMin: 200000,
-  budgetMax: 2000000,
+  budgetMax: 3000000,
   risks: [
     {
       id: "payment-fraud",
@@ -1127,7 +1127,7 @@ export function buildOrganizationFromAssessment(a: OrganizationAssessment): Orga
     {id:"budget",title:"Investment strategy ready",message:`Your ${formatINRShort(a.budget)} budget is ready for optimization.`,time:"Today",severity:"Info",read:true},
   ]
   const riskTrend = ["Mar","Apr","May","Jun","Jul","Aug"].map((month,i)=>({month,score:Math.max(25,Math.min(95,riskScore + (5-i)*1.4 + (i===5?0:2)))}))
-  return {id,name:a.name,industry:a.industry,tagline:`${a.size} organization · ${a.employees.toLocaleString()} employees`,budgetDefault:a.budget,budgetMin:Math.max(100000,Math.round(a.budget*.35)),budgetMax:Math.max(a.budget,Math.round(a.budget*1.8)),risks,controls,notifications,riskTrend}
+  return {id,name:a.name,industry:a.industry,tagline:`${a.size} organization · ${a.employees.toLocaleString()} employees`,budgetDefault:a.budget,budgetMin:Math.max(100000,Math.round(a.budget*.35)),budgetMax:Math.max(3000000,a.budget),risks,controls,notifications,riskTrend}
 }
 
 export const ORGANIZATIONS: Organization[] = [ABC_BANK, NOVATECH, MEDICORE, SHOPSPHERE]
