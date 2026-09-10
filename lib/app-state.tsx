@@ -10,6 +10,7 @@ import {
   buildOrganizationFromAssessment,
 } from "@/lib/data"
 import { runOptimization, type OptimizationResult } from "@/lib/optimizer"
+import { supabase } from "@/lib/supabase"
 
 interface AppStateValue {
   org: Organization
@@ -41,6 +42,64 @@ export function useAppState(): AppStateValue {
   const ctx = useContext(AppStateContext)
   if (!ctx) throw new Error("useAppState must be used within AppStateProvider")
   return ctx
+}
+async function saveOptimizationRun(
+  org: Organization,
+  budget: number,
+  objective: Objective,
+  result: OptimizationResult,
+) {
+  try {
+    // Find the organization in Supabase
+    const { data: existingOrg, error: findError } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("name", org.name)
+      .maybeSingle()
+
+    if (findError) throw findError
+
+    let organizationId = existingOrg?.id
+
+    // Create it if this organization isn't in the database yet
+    if (!organizationId) {
+      const { data: newOrg, error: createError } = await supabase
+        .from("organizations")
+        .insert({
+          name: org.name,
+          industry: org.industry,
+          risk_score: result.riskBefore,
+          annual_exposure: result.exposureBefore,
+          optimization_budget: budget,
+        })
+        .select("id")
+        .single()
+
+      if (createError) throw createError
+
+      organizationId = newOrg.id
+    }
+
+    // Save the optimization run
+    const { error: runError } = await supabase
+      .from("optimization_runs")
+      .insert({
+        organization_id: organizationId,
+        budget,
+        objective,
+        risk_before: result.riskBefore,
+        risk_after: result.riskAfter,
+        risk_reduction_percent: result.percentReduction,
+        total_investment: result.totalInvestment,
+      })
+
+    if (runError) throw runError
+
+    console.log("RiskOpt optimization saved to Supabase.")
+  } catch (error) {
+    // Database failure should not break the demo UI.
+    console.error("Could not save optimization to Supabase:", error)
+  }
 }
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
@@ -94,7 +153,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     window.setTimeout(() => {
       setRunning(false)
       setHasRun(true)
-      setNotifState((prev) => {
+     void saveOptimizationRun(org, budget, objective, result)
+
+setNotifState((prev) => {
         const current = prev[org.id] ?? []
         const already = current.some((n) => n.id === "optimization-run")
         const entry: OrgNotification = {
@@ -111,7 +172,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, [org.id]: already ? [entry, ...withoutOld] : [entry, ...current] }
       })
     }, 900)
-  }, [org, budget])
+  }, [org, budget, objective, result])
 
   const notifications = notifState[org.id] ?? []
   const unreadCount = notifications.filter((n) => !n.read).length
